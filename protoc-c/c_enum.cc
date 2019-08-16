@@ -62,6 +62,7 @@
 
 #include <set>
 #include <map>
+#include <algorithm>
 
 #include <protoc-c/c_enum.h>
 #include <protoc-c/c_helpers.h>
@@ -101,6 +102,8 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
   vars["prefix"] = FullNameToUpper(descriptor_->full_name()) + "__";
   for (int i = 0; i < descriptor_->value_count(); i++) {
     vars["name"] = descriptor_->value(i)->name();
+    std::replace(vars["name"].begin(), vars["name"].end(), '-', '_');
+    vars["name"].erase(std::remove(vars["name"].begin(), vars["name"].end(), '.'), vars["name"].end());
     vars["number"] = SimpleItoa(descriptor_->value(i)->number());
     if (i + 1 == descriptor_->value_count())
       vars["opt_comma"] = "";
