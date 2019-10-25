@@ -82,6 +82,8 @@ void SetEnumVariables(const FieldDescriptor* descriptor,
   const EnumValueDescriptor* default_value = descriptor->default_value_enum();
   (*variables)["default"] = FullNameToUpper(default_value->type()->full_name())
                           + "__" + default_value->name();
+  std::replace((*variables)["default"].begin(), (*variables)["default"].end(), '-', '_');
+  (*variables)["default"].erase(std::remove((*variables)["default"].begin(), (*variables)["default"].end(), '.'), (*variables)["default"].end());
   (*variables)["deprecated"] = FieldDeprecated(descriptor);
 }
 
