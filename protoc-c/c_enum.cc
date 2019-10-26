@@ -83,9 +83,9 @@ EnumGenerator::~EnumGenerator() {}
 
 void EnumGenerator::GenerateDefinition(io::Printer* printer) {
   std::map<string, string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
+  vars["classname"] = ToCamel(descriptor_->name());
   vars["shortname"] = descriptor_->name();
-  vars["uc_name"] = FullNameToUpper(descriptor_->full_name());
+  vars["uc_name"] = FullNameToUpper(descriptor_->name());
 
   SourceLocation sourceLoc;
   descriptor_->GetSourceLocation(&sourceLoc);
@@ -99,7 +99,7 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
 
 
   vars["opt_comma"] = ",";
-  vars["prefix"] = FullNameToUpper(descriptor_->full_name()) + "__";
+  vars["prefix"] = "";  // FullNameToUpper(descriptor_->full_name()) + "__";
   for (int i = 0; i < descriptor_->value_count(); i++) {
     vars["name"] = descriptor_->value(i)->name();
     std::replace(vars["name"].begin(), vars["name"].end(), '-', '_');

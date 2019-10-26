@@ -105,10 +105,10 @@ class MessageGenerator {
   void GenerateEnumDefinitions(io::Printer* printer);
 
   // Generate definitions for this class and all its nested types.
-  void GenerateStructDefinition(io::Printer* printer);
+  void GenerateClassDefinition(io::Printer* printer);
 
   // Generate __INIT macro for populating this structure
-  void GenerateStructStaticInitMacro(io::Printer* printer);
+  void GenerateClassStaticInitMacro(io::Printer* printer);
 
   // Generate standard helper functions declarations for this message.
   void GenerateHelperFunctionDeclarations(io::Printer* printer, bool is_submessage);

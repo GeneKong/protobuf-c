@@ -182,10 +182,11 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
   }
 
   // Generate class definitions.
-  printer->Print("\n/* --- messages --- */\n\n");
+  printer->Print("\n/* --- messages class begin --- */\n\n");
   for (int i = 0; i < file_->message_type_count(); i++) {
-    message_generators_[i]->GenerateStructDefinition(printer);
+    message_generators_[i]->GenerateClassDefinition(printer);
   }
+  printer->Print("\n/* --- messages class end --- */\n\n");
 
   for (int i = 0; i < file_->message_type_count(); i++) {
     message_generators_[i]->GenerateHelperFunctionDeclarations(printer, false);

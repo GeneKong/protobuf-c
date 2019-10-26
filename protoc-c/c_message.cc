@@ -132,13 +132,14 @@ GenerateEnumDefinitions(io::Printer* printer) {
 
 
 void MessageGenerator::
-GenerateStructDefinition(io::Printer* printer) {
+GenerateClassDefinition(io::Printer* printer) {
+
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
-    nested_generators_[i]->GenerateStructDefinition(printer);
+    nested_generators_[i]->GenerateClassDefinition(printer);
   }
 
   std::map<string, string> vars;
-  vars["classname"] = FullNameToC(descriptor_->full_name());
+  vars["classname"] = FullNameToC(descriptor_->name());
   vars["lcclassname"] = FullNameToLower(descriptor_->full_name());
   vars["ucclassname"] = FullNameToUpper(descriptor_->full_name());
   vars["field_count"] = SimpleItoa(descriptor_->field_count());
@@ -179,9 +180,11 @@ GenerateStructDefinition(io::Printer* printer) {
   PrintComment (printer, msgSourceLoc.leading_comments);
 
   printer->Print(vars,
-    "struct $dllexport$ _$classname$\n"
+    "class $dllexport$ _$classname$\n"
     "{\n"
     "  ProtobufCMessage base;\n");
+
+  this->GenerateEnumDefinitions(printer);
 
   // Generate fields.
   printer->Indent();
