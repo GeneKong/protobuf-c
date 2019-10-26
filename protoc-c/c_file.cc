@@ -136,9 +136,10 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
     "\n"
     "#include <protobuf-c/protobuf-c.h>\n"
     "\n"
-    "PROTOBUF_C__BEGIN_DECLS\n"
+    "namespace $package$ {\n"
     "\n",
     "filename", file_->name(),
+    "package", ToCamel(file_->package()),
     "filename_identifier", filename_identifier);
 
   // Verify the protobuf-c library header version is compatible with the
@@ -158,24 +159,24 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
 
   for (int i = 0; i < file_->dependency_count(); i++) {
     printer->Print(
-      "#include \"$dependency$.pb-c.h\"\n",
+      "#include \"$dependency$.pb-c.hpp\"\n",
       "dependency", StripProto(file_->dependency(i)->name()));
   }
 
   printer->Print("\n");
 
   // Generate forward declarations of classes.
-  for (int i = 0; i < file_->message_type_count(); i++) {
-    message_generators_[i]->GenerateStructTypedef(printer);
-  }
+  //for (int i = 0; i < file_->message_type_count(); i++) {
+  //  message_generators_[i]->GenerateClassDeclare(printer);
+  //}
 
-  printer->Print("\n");
+  //printer->Print("\n");
 
   // Generate enum definitions.
   printer->Print("\n/* --- enums --- */\n\n");
-  for (int i = 0; i < file_->message_type_count(); i++) {
-    message_generators_[i]->GenerateEnumDefinitions(printer);
-  }
+  //for (int i = 0; i < file_->message_type_count(); i++) {
+  //  message_generators_[i]->GenerateEnumDefinitions(printer);
+  //}
   for (int i = 0; i < file_->enum_type_count(); i++) {
     enum_generators_[i]->GenerateDefinition(printer);
   }
@@ -219,8 +220,9 @@ void FileGenerator::GenerateHeader(io::Printer* printer) {
 
   printer->Print(
     "\n"
-    "PROTOBUF_C__END_DECLS\n"
+    "} // namespace $package$\n"
     "\n\n#endif  /* PROTOBUF_C_$filename_identifier$__INCLUDED */\n",
+	"package", file_->package(),
     "filename_identifier", filename_identifier);
 }
 

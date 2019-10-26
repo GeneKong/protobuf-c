@@ -92,7 +92,7 @@ class MessageGenerator {
   // Header stuff.
 
   // Generate typedef.
-  void GenerateStructTypedef(io::Printer* printer);
+  void GenerateClassDeclare(io::Printer* printer);
 
   // Generate descriptor prototype
   void GenerateDescriptorDeclarations(io::Printer* printer);

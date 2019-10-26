@@ -151,7 +151,7 @@ bool CGenerator::Generate(const FileDescriptor* file,
   // Generate header.
   {
     std::unique_ptr<io::ZeroCopyOutputStream> output(
-      output_directory->Open(basename + ".h"));
+      output_directory->Open(basename + ".hpp"));
     io::Printer printer(output.get(), '$');
     file_generator.GenerateHeader(&printer);
   }
@@ -159,7 +159,7 @@ bool CGenerator::Generate(const FileDescriptor* file,
   // Generate cc file.
   {
     std::unique_ptr<io::ZeroCopyOutputStream> output(
-      output_directory->Open(basename + ".c"));
+      output_directory->Open(basename + ".cpp"));
     io::Printer printer(output.get(), '$');
     file_generator.GenerateSource(&printer);
   }

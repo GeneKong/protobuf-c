@@ -110,12 +110,12 @@ MessageGenerator::MessageGenerator(const Descriptor* descriptor,
 MessageGenerator::~MessageGenerator() {}
 
 void MessageGenerator::
-GenerateStructTypedef(io::Printer* printer) {
-  printer->Print("typedef struct _$classname$ $classname$;\n",
-                 "classname", FullNameToC(descriptor_->full_name()));
+GenerateClassDeclare(io::Printer* printer) {
+  printer->Print("Class $classname$;\n",
+                 "classname", FullNameToC(descriptor_->name()));
 
   for (int i = 0; i < descriptor_->nested_type_count(); i++) {
-    nested_generators_[i]->GenerateStructTypedef(printer);
+    nested_generators_[i]->GenerateClassDeclare(printer);
   }
 }
 
