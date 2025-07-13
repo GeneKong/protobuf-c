@@ -196,7 +196,6 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
     const google::protobuf::FieldDescriptor* field = descriptor_->field(i);
     if (field->real_containing_oneof() == NULL) {
       google::protobuf::SourceLocation fieldSourceLoc;
-      SourceLocation fieldSourceLoc;
       field->GetSourceLocation(&fieldSourceLoc);
 
       PrintComment (printer, fieldSourceLoc.leading_comments);
