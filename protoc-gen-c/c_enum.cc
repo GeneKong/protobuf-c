@@ -170,9 +170,21 @@ void EnumGenerator::GenerateValueInitializer(google::protobuf::io::Printer *prin
   
   if (optimize_code_size)
     printer->Print(vars, "  { NULL, NULL, $value$, NULL }, /* CODE_SIZE */\n");
-  else
-    printer->Print(vars,
-        "  { \"$enum_value_name$\", \"$c_enum_value_name$\", $value$, \"$json_name$\" },\n");
+  else {
+    // Check if we should optimize for ROM usage by omitting c_name
+    bool optimize_rom_usage = descriptor_->file()->options().has_optimize_for() &&
+      (descriptor_->file()->options().optimize_for() == 
+       google::protobuf::FileOptions_OptimizeMode_LITE_RUNTIME);
+    
+    if (optimize_rom_usage) {
+      // Keep name and json_name, but omit the long c_name to save ROM
+      printer->Print(vars,
+          "  { NULL, NULL, $value$, \"$json_name$\" }, /* LITE_RUNTIME - no c_name */\n");
+    } else {
+      printer->Print(vars,
+          "  { \"$enum_value_name$\", \"$c_enum_value_name$\", $value$, \"$json_name$\" },\n");
+    }
+  }
 }
 
 static int compare_value_indices_by_value_then_index(const void *a, const void *b)
@@ -285,22 +297,30 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
   }
   vars["n_ranges"] = SimpleItoa(n_ranges);
 
-  if (!optimize_code_size) {
-    qsort(&value_index[0],
-          value_index.size(),
-          sizeof(ValueIndex),
-          compare_value_indices_by_name);
-    printer->Print(vars,
-        "static const ProtobufCEnumValueIndex $lcclassname$__enum_values_by_name[$value_count$] =\n"
-        "{\n");
-    for (int j = 0; j < descriptor_->value_count(); j++) {
-      vars["index"] = SimpleItoa(value_index[j].final_index);
-      vars["name"] = std::string(value_index[j].name);
-      printer->Print (vars, "  { \"$name$\", $index$ },\n");
-    }
-    printer->Print(vars, "};\n");
+  // Check if we're in any optimization mode
+  bool optimize_rom_usage = descriptor_->file()->options().has_optimize_for() &&
+    (descriptor_->file()->options().optimize_for() == 
+     google::protobuf::FileOptions_OptimizeMode_LITE_RUNTIME);
 
-    // Generate JSON name lookup table
+  if (!optimize_code_size) {
+    // Only generate name lookup table if we have actual names (not in ROM optimization mode)
+    if (!optimize_rom_usage) {
+      qsort(&value_index[0],
+            value_index.size(),
+            sizeof(ValueIndex),
+            compare_value_indices_by_name);
+      printer->Print(vars,
+          "static const ProtobufCEnumValueIndex $lcclassname$__enum_values_by_name[$value_count$] =\n"
+          "{\n");
+      for (int j = 0; j < descriptor_->value_count(); j++) {
+        vars["index"] = SimpleItoa(value_index[j].final_index);
+        vars["name"] = std::string(value_index[j].name);
+        printer->Print (vars, "  { \"$name$\", $index$ },\n");
+      }
+      printer->Print(vars, "};\n");
+    }
+
+    // Always generate JSON name lookup table (most useful for applications)
     std::vector<std::pair<std::string, int>> json_name_index;
     for (int j = 0; j < descriptor_->value_count(); j++) {
       const google::protobuf::EnumValueDescriptor *vd = descriptor_->value(j);
@@ -345,24 +365,51 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
         "  NULL,NULL   /* reserved[12] */\n"
         "};\n");
   } else {
-    printer->Print(vars,
-        "const ProtobufCEnumDescriptor $lcclassname$__descriptor =\n"
-        "{\n"
-        "  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,\n"
-        "  \"$fullname$\",\n"
-        "  \"$shortname$\",\n"
-        "  \"$cname$\",\n"
-        "  \"$packagename$\",\n"
-        "  $unique_value_count$,\n"
-        "  $lcclassname$__enum_values_by_number,\n"
-        "  $value_count$,\n"
-        "  $lcclassname$__enum_values_by_name,\n"
-        "  $n_ranges$,\n"
-        "  $lcclassname$__value_ranges,\n"
-        "  $value_count$,\n"
-        "  $lcclassname$__enum_values_by_json_name,\n"
-        "  NULL,NULL   /* reserved[12] */\n"
-        "};\n");
+    // Check optimization mode to determine which lookup tables to include
+    bool optimize_rom_usage = descriptor_->file()->options().has_optimize_for() &&
+      (descriptor_->file()->options().optimize_for() == 
+       google::protobuf::FileOptions_OptimizeMode_LITE_RUNTIME);
+
+    if (optimize_rom_usage) {
+      // LITE_RUNTIME mode: skip name lookup table, keep JSON lookup table
+      printer->Print(vars,
+          "const ProtobufCEnumDescriptor $lcclassname$__descriptor =\n"
+          "{\n"
+          "  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,\n"
+          "  \"$fullname$\",\n"
+          "  \"$shortname$\",\n"
+          "  \"$cname$\",\n"
+          "  \"$packagename$\",\n"
+          "  $unique_value_count$,\n"
+          "  $lcclassname$__enum_values_by_number,\n"
+          "  0, NULL, /* LITE_RUNTIME - no name lookup */\n"
+          "  $n_ranges$,\n"
+          "  $lcclassname$__value_ranges,\n"
+          "  $value_count$,\n"
+          "  $lcclassname$__enum_values_by_json_name,\n"
+          "  NULL,NULL   /* reserved[12] */\n"
+          "};\n");
+    } else {
+      // Standard mode: include all lookup tables
+      printer->Print(vars,
+          "const ProtobufCEnumDescriptor $lcclassname$__descriptor =\n"
+          "{\n"
+          "  PROTOBUF_C__ENUM_DESCRIPTOR_MAGIC,\n"
+          "  \"$fullname$\",\n"
+          "  \"$shortname$\",\n"
+          "  \"$cname$\",\n"
+          "  \"$packagename$\",\n"
+          "  $unique_value_count$,\n"
+          "  $lcclassname$__enum_values_by_number,\n"
+          "  $value_count$,\n"
+          "  $lcclassname$__enum_values_by_name,\n"
+          "  $n_ranges$,\n"
+          "  $lcclassname$__value_ranges,\n"
+          "  $value_count$,\n"
+          "  $lcclassname$__enum_values_by_json_name,\n"
+          "  NULL,NULL   /* reserved[12] */\n"
+          "};\n");
+    }
   }
 }
 
