@@ -253,6 +253,39 @@ void PrintComment(google::protobuf::io::Printer* printer, std::string comment)
    }
 }
 
+std::string ExtractJsonEnumValue(const std::string& comment) {
+  // Look for pattern: JSON: "value" or JSON:"value"
+  std::vector<std::string> comment_lines;
+  SplitStringUsing(comment, "\r\n", &comment_lines);
+  
+  for (const std::string& line : comment_lines) {
+    // Find "JSON:" pattern (case insensitive)
+    size_t json_pos = line.find("JSON:");
+    if (json_pos == std::string::npos) {
+      json_pos = line.find("json:");
+    }
+    if (json_pos == std::string::npos) {
+      json_pos = line.find("Json:");
+    }
+    
+    if (json_pos != std::string::npos) {
+      // Find the opening quote after "JSON:"
+      size_t quote_start = line.find('"', json_pos);
+      if (quote_start != std::string::npos) {
+        // Find the closing quote
+        size_t quote_end = line.find('"', quote_start + 1);
+        if (quote_end != std::string::npos) {
+          // Extract the content between quotes
+          return line.substr(quote_start + 1, quote_end - quote_start - 1);
+        }
+      }
+    }
+  }
+  
+  // Return empty string if no JSON value found
+  return "";
+}
+
 std::string ConvertToSpaces(compat::StringView input) {
   return std::string(input.size(), ' ');
 }

@@ -62,6 +62,9 @@
 // Modified to implement C code by Dave Benson.
 
 #include <map>
+#include <vector>
+#include <utility>
+#include <algorithm>
 
 #include <google/protobuf/io/printer.h>
 
@@ -151,14 +154,25 @@ void EnumGenerator::GenerateValueInitializer(google::protobuf::io::Printer *prin
   bool optimize_code_size = descriptor_->file()->options().has_optimize_for() &&
     descriptor_->file()->options().optimize_for() ==
     google::protobuf::FileOptions_OptimizeMode_CODE_SIZE;
+  
+  // Extract JSON name from comments
+  google::protobuf::SourceLocation valSourceLoc;
+  vd->GetSourceLocation(&valSourceLoc);
+  std::string json_value = ExtractJsonEnumValue(valSourceLoc.leading_comments);
+  if (json_value.empty()) {
+    json_value = ExtractJsonEnumValue(valSourceLoc.trailing_comments);
+  }
+  
   vars["enum_value_name"] = std::string(vd->name());
   vars["c_enum_value_name"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file()) + "__" + std::string(vd->name());
   vars["value"] = SimpleItoa(vd->number());
+  vars["json_name"] = json_value.empty() ? std::string(vd->name()) : json_value;
+  
   if (optimize_code_size)
-    printer->Print(vars, "  { NULL, NULL, $value$ }, /* CODE_SIZE */\n");
+    printer->Print(vars, "  { NULL, NULL, $value$, NULL }, /* CODE_SIZE */\n");
   else
     printer->Print(vars,
-        "  { \"$enum_value_name$\", \"$c_enum_value_name$\", $value$ },\n");
+        "  { \"$enum_value_name$\", \"$c_enum_value_name$\", $value$, \"$json_name$\" },\n");
 }
 
 static int compare_value_indices_by_value_then_index(const void *a, const void *b)
@@ -285,6 +299,35 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
       printer->Print (vars, "  { \"$name$\", $index$ },\n");
     }
     printer->Print(vars, "};\n");
+
+    // Generate JSON name lookup table
+    std::vector<std::pair<std::string, int>> json_name_index;
+    for (int j = 0; j < descriptor_->value_count(); j++) {
+      const google::protobuf::EnumValueDescriptor *vd = descriptor_->value(j);
+      google::protobuf::SourceLocation valSourceLoc;
+      vd->GetSourceLocation(&valSourceLoc);
+      std::string json_value = ExtractJsonEnumValue(valSourceLoc.leading_comments);
+      if (json_value.empty()) {
+        json_value = ExtractJsonEnumValue(valSourceLoc.trailing_comments);
+      }
+      if (json_value.empty()) {
+        json_value = std::string(vd->name());
+      }
+      json_name_index.push_back(std::make_pair(json_value, value_index[j].final_index));
+    }
+    
+    // Sort by JSON name
+    std::sort(json_name_index.begin(), json_name_index.end());
+    
+    printer->Print(vars,
+        "static const ProtobufCEnumValueIndex $lcclassname$__enum_values_by_json_name[$value_count$] =\n"
+        "{\n");
+    for (size_t j = 0; j < json_name_index.size(); j++) {
+      vars["index"] = SimpleItoa(json_name_index[j].second);
+      vars["json_name"] = json_name_index[j].first;
+      printer->Print (vars, "  { \"$json_name$\", $index$ },\n");
+    }
+    printer->Print(vars, "};\n");
   }
 
   if (optimize_code_size) {
@@ -298,7 +341,8 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
         "  0, NULL, /* CODE_SIZE */\n"
         "  $n_ranges$,\n"
         "  $lcclassname$__value_ranges,\n"
-        "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
+        "  0, NULL, /* CODE_SIZE - JSON names */\n"
+        "  NULL,NULL   /* reserved[12] */\n"
         "};\n");
   } else {
     printer->Print(vars,
@@ -315,7 +359,9 @@ void EnumGenerator::GenerateEnumDescriptor(google::protobuf::io::Printer* printe
         "  $lcclassname$__enum_values_by_name,\n"
         "  $n_ranges$,\n"
         "  $lcclassname$__value_ranges,\n"
-        "  NULL,NULL,NULL,NULL   /* reserved[1234] */\n"
+        "  $value_count$,\n"
+        "  $lcclassname$__enum_values_by_json_name,\n"
+        "  NULL,NULL   /* reserved[12] */\n"
         "};\n");
   }
 }

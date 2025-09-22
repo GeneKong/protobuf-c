@@ -3595,6 +3595,59 @@ protobuf_c_enum_descriptor_get_value(const ProtobufCEnumDescriptor *desc,
 	return desc->values + rv;
 }
 
+const ProtobufCEnumValue *
+protobuf_c_enum_descriptor_get_value_by_json_name(const ProtobufCEnumDescriptor *desc,
+						   const char *json_name)
+{
+	unsigned start = 0;
+	unsigned count;
+
+	if (desc == NULL || desc->values_by_json_name == NULL || json_name == NULL)
+		return NULL;
+
+	count = desc->n_json_value_names;
+
+	while (count > 1) {
+		unsigned mid = start + count / 2;
+		int rv = strcmp(desc->values_by_json_name[mid].name, json_name);
+		if (rv == 0)
+			return desc->values + desc->values_by_json_name[mid].index;
+		else if (rv < 0) {
+			count = start + count - (mid + 1);
+			start = mid + 1;
+		} else
+			count = mid - start;
+	}
+	if (count == 0)
+		return NULL;
+	if (strcmp(desc->values_by_json_name[start].name, json_name) == 0)
+		return desc->values + desc->values_by_json_name[start].index;
+	return NULL;
+}
+
+const char *
+protobuf_c_enum_descriptor_get_json_name(const ProtobufCEnumDescriptor *desc,
+					  int value)
+{
+	const ProtobufCEnumValue *enum_value = protobuf_c_enum_descriptor_get_value(desc, value);
+	if (enum_value == NULL)
+		return NULL;
+	return enum_value->json_name;
+}
+
+int
+protobuf_c_enum_descriptor_get_value_from_json_name(const ProtobufCEnumDescriptor *desc,
+						     const char *json_name,
+						     int *value)
+{
+	const ProtobufCEnumValue *enum_value = protobuf_c_enum_descriptor_get_value_by_json_name(desc, json_name);
+	if (enum_value == NULL)
+		return 0;
+	if (value != NULL)
+		*value = enum_value->value;
+	return 1;
+}
+
 const ProtobufCFieldDescriptor *
 protobuf_c_message_descriptor_get_field_by_name(const ProtobufCMessageDescriptor *desc,
 						const char *name)

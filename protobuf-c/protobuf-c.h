@@ -525,14 +525,15 @@ struct ProtobufCEnumDescriptor {
 	/** Value ranges, for faster lookups by numeric value. */
 	const ProtobufCIntRange		*value_ranges;
 
+	/** Number of elements in `values_by_json_name`. */
+	unsigned			n_json_value_names;
+	/** Array of values sorted by JSON name for JSON enum conversion. */
+	const ProtobufCEnumValueIndex	*values_by_json_name;
+
 	/** Reserved for future use. */
 	void				*reserved1;
 	/** Reserved for future use. */
 	void				*reserved2;
-	/** Reserved for future use. */
-	void				*reserved3;
-	/** Reserved for future use. */
-	void				*reserved4;
 };
 
 /**
@@ -547,6 +548,9 @@ struct ProtobufCEnumValue {
 
 	/** The numeric value assigned in the .proto file. */
 	int		value;
+
+	/** The JSON string for this enum value (from comment annotation). */
+	const char	*json_name;
 };
 
 /**
@@ -848,6 +852,61 @@ const ProtobufCEnumValue *
 protobuf_c_enum_descriptor_get_value(
 	const ProtobufCEnumDescriptor *desc,
 	int value);
+
+/**
+ * Look up a `ProtobufCEnumValue` from a `ProtobufCEnumDescriptor` by JSON name.
+ *
+ * \param desc
+ *      The `ProtobufCEnumDescriptor` object.
+ * \param json_name
+ *      The JSON string name from the corresponding `ProtobufCEnumValue` object to
+ *      look up.
+ *
+ * \return
+ *      A `ProtobufCEnumValue` object or NULL if not found.
+ */
+PROTOBUF_C__API
+const ProtobufCEnumValue *
+protobuf_c_enum_descriptor_get_value_by_json_name(
+	const ProtobufCEnumDescriptor *desc,
+	const char *json_name);
+
+/**
+ * Convert enum value to JSON string.
+ *
+ * \param desc
+ *      The `ProtobufCEnumDescriptor` object.
+ * \param value
+ *      The numeric value to convert.
+ *
+ * \return
+ *      JSON string representation or NULL if not found.
+ */
+PROTOBUF_C__API
+const char *
+protobuf_c_enum_descriptor_get_json_name(
+	const ProtobufCEnumDescriptor *desc,
+	int value);
+
+/**
+ * Convert JSON string to enum value.
+ *
+ * \param desc
+ *      The `ProtobufCEnumDescriptor` object.
+ * \param json_name
+ *      The JSON string name to convert.
+ * \param value
+ *      Pointer to store the resulting enum value.
+ *
+ * \return
+ *      1 if successful, 0 if not found.
+ */
+PROTOBUF_C__API
+int
+protobuf_c_enum_descriptor_get_value_from_json_name(
+	const ProtobufCEnumDescriptor *desc,
+	const char *json_name,
+	int *value);
 
 /**
  * Look up a `ProtobufCFieldDescriptor` from a `ProtobufCMessageDescriptor` by

@@ -3,6 +3,9 @@ global:
         protobuf_c_buffer_simple_append;
         protobuf_c_enum_descriptor_get_value;
         protobuf_c_enum_descriptor_get_value_by_name;
+        protobuf_c_enum_descriptor_get_value_by_json_name;
+        protobuf_c_enum_descriptor_get_json_name;
+        protobuf_c_enum_descriptor_get_value_from_json_name;
         protobuf_c_message_check;
         protobuf_c_message_descriptor_get_field;
         protobuf_c_message_descriptor_get_field_by_name;

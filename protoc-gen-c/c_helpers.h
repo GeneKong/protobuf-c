@@ -130,6 +130,9 @@ std::string FullNameToC(compat::StringView class_name, const google::protobuf::F
 // Splits, indents, formats, and prints comment lines
 void PrintComment(google::protobuf::io::Printer* printer, std::string comment);
 
+// Extract JSON enum value from comment string (e.g., from '// JSON: "Accepted"' extracts 'Accepted')
+std::string ExtractJsonEnumValue(const std::string& comment);
+
 // make a string of spaces as long as input
 std::string ConvertToSpaces(compat::StringView input);
 
